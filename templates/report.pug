@@ -6,50 +6,66 @@ html(lang='en')
     title URL Redirection Test Report
     style.
       body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-      .container { max-width: 1000px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+      .container { max-width: 1200px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
       h1 { color: #0056b3; text-align: center; }
-      h2 { color: #d9534f; }
+      h2 { color: #333; margin-top: 30px;}
       p { margin-bottom: 10px; }
-      .summary { background-color: #e7f3ff; border-left: 6px solid #2196F3; margin-bottom: 20px; padding: 10px; border-radius: 4px; }
+      .summary { background-color: #e7f3ff; border-left: 6px solid #2196F3; margin-bottom: 20px; padding: 10px; border-radius: 4px; display: flex; justify-content: space-around; flex-wrap: wrap;}
+      .summary-item { text-align: center; padding: 5px 15px; }
       table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top;}
       th { background-color: #f2f2f2; }
       tr:nth-child(even) { background-color: #f9f9f9; }
-      .failed-row { background-color: #fdd; } /* Light red for failed rows */
-      .success { color: green; font-weight: bold; }
-      .failure { color: red; font-weight: bold; }
+      .status-passed { background-color: #e6ffe6; } /* Light green */
+      .status-failed { background-color: #ffe6e6; } /* Light red */
+      .status-skipped { background-color: #fff2e6; } /* Light orange */
+      .status-passed td { color: green; }
+      .status-failed td { color: red; }
+      .status-skipped td { color: orange; }
       .url-break { word-break: break-all; }
-body
-  .container
-    h1 URL Redirection Test Report
-    .summary
-      p
-        strong Report Date:
-        | #{reportDate}
-      p
-        strong Total URLs Checked:
-        | #{failedRecords.length + (failedRecords.length === 0 ? ' (All Passed)' : '')}
-      p
-        strong Total Failures:
-        span(class=(totalFailures > 0 ? 'failure' : 'success')) #{totalFailures}
+      .status-column { font-weight: bold; text-align: center; }
 
-    if totalFailures > 0
-      h2 Failed Navigations Details
+  body
+    .container
+      h1 URL Redirection Test Report
+      .summary
+        .summary-item
+          p
+            strong Report Date:
+            | #{reportDate}
+        .summary-item
+          p
+            strong Total URLs Checked:
+            | #{totalRecordsCount}
+        .summary-item
+          p
+            strong Passed:
+            span(class='status-passed') #{passedRecordsCount}
+        .summary-item
+          p
+            strong Failed:
+            span(class=(failedRecordsCount > 0 ? 'status-failed' : 'status-passed')) #{failedRecordsCount}
+        .summary-item
+          p
+            strong Skipped:
+            span(class='status-skipped') #{skippedRecordsCount}
+
+      h2 All Navigation Details
       table
         thead
           tr
             th #
+            th Status
             th Old URL
             th Expected New URL Part
             th Actual New URL Reached
-            th Reason for Failure
+            th Reason / Details
         tbody
-          each record, index in failedRecords
-            tr(class='failed-row')
+          each record, index in allTestRecords
+            tr(class='status-' + record.status.toLowerCase())
               td #{index + 1}
+              td.status-column #{record.status}
               td.url-break #{record.oldUrl}
               td.url-break #{record.expectedNewUrlContains}
               td.url-break #{record.newUrl}
-              td #{record.reason}
-    else
-      p.success No failures found. All URLs redirected correctly and no 404 pages were detected.
+              td #{record.reason || 'N/A'}
