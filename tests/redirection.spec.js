@@ -1,11 +1,10 @@
 // tests/redirection.spec.js
 import { test, expect } from '@playwright/test';
-import { checkNavigation, generateHtmlReport } from '../pages/navigationChecks'; // IMPORT BOTH FUNCTIONS
+import { checkNavigation, generateHtmlReport } from '../pages/navigationChecks'; // Adjust path if needed
 
 test('Verify all old URLs redirect correctly and no 404 pages are found', async ({ page }) => {
-  test.setTimeout(2000000);
   const excelFilePath = './data/url_redirections.xlsx';
-  const reportOutputFolder = './reports'; // Folder to save reports
+  const reportOutputFolder = './reports';
   const reportFileName = `redirection_report_${new Date().toISOString().replace(/:/g, '-')}.html`;
   const reportFullPath = `${reportOutputFolder}/${reportFileName}`;
 
@@ -14,12 +13,17 @@ test('Verify all old URLs redirect correctly and no 404 pages are found', async 
   console.log(`   Report will be saved to: ${reportFullPath}`);
   console.log(`   Timestamp: ${new Date().toLocaleString()}\n`);
 
-  const failedRecords = await checkNavigation(page, excelFilePath);
+  // Renamed 'failedRecords' to 'allResults'
+  const allResults = await checkNavigation(page, excelFilePath);
 
-  // === THIS IS THE CRUCIAL PART ===
-  // Generate the HTML report regardless of success or failure
-  await generateHtmlReport(failedRecords, reportFullPath);
-  // =================================
+  // Filter failed records for console output and test failure condition
+  const failedRecords = allResults.filter(record => record.status === 'Failed');
+
+
+  console.log(`[DEBUG] About to call generateHtmlReport. Total Records Count: ${allResults.length}, Failed: ${failedRecords.length}`);
+  await generateHtmlReport(allResults, reportFullPath); // Pass allResults
+  console.log(`[DEBUG] generateHtmlReport call completed.`);
+
 
   if (failedRecords.length > 0) {
     console.error('\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
