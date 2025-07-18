@@ -30,7 +30,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run URL Redirection Tests
-        run: nnpx playwright test --project=chromium # Or --project=all to run on all configured browsers
+        run: npx playwright test --project=chromium # Or --project=all to run on all configured browsers
 
       - name: Upload Custom HTML Report
         uses: actions/upload-artifact@v4
