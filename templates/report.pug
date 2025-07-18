@@ -1,0 +1,55 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title URL Redirection Test Report
+    style.
+      body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+      .container { max-width: 1000px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+      h1 { color: #0056b3; text-align: center; }
+      h2 { color: #d9534f; }
+      p { margin-bottom: 10px; }
+      .summary { background-color: #e7f3ff; border-left: 6px solid #2196F3; margin-bottom: 20px; padding: 10px; border-radius: 4px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background-color: #f2f2f2; }
+      tr:nth-child(even) { background-color: #f9f9f9; }
+      .failed-row { background-color: #fdd; } /* Light red for failed rows */
+      .success { color: green; font-weight: bold; }
+      .failure { color: red; font-weight: bold; }
+      .url-break { word-break: break-all; }
+body
+  .container
+    h1 URL Redirection Test Report
+    .summary
+      p
+        strong Report Date:
+        | #{reportDate}
+      p
+        strong Total URLs Checked:
+        | #{failedRecords.length + (failedRecords.length === 0 ? ' (All Passed)' : '')}
+      p
+        strong Total Failures:
+        span(class=(totalFailures > 0 ? 'failure' : 'success')) #{totalFailures}
+
+    if totalFailures > 0
+      h2 Failed Navigations Details
+      table
+        thead
+          tr
+            th #
+            th Old URL
+            th Expected New URL Part
+            th Actual New URL Reached
+            th Reason for Failure
+        tbody
+          each record, index in failedRecords
+            tr(class='failed-row')
+              td #{index + 1}
+              td.url-break #{record.oldUrl}
+              td.url-break #{record.expectedNewUrlContains}
+              td.url-break #{record.newUrl}
+              td #{record.reason}
+    else
+      p.success No failures found. All URLs redirected correctly and no 404 pages were detected.
