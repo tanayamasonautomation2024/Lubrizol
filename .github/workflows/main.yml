@@ -1,0 +1,49 @@
+name: URL Redirection Check
+
+on:
+  push:
+    branches:
+      - main # Or whatever your main branch is called
+  pull_request:
+    branches:
+      - main # Run on PRs to main as well
+  workflow_dispatch: # Allows you to manually trigger the workflow from GitHub UI
+
+jobs:
+  check-redirects:
+    timeout-minutes: 30 # Set a reasonable timeout for the entire job
+    runs-on: ubuntu-latest # Or windows-latest, macos-latest if needed
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Or your preferred LTS Node.js version
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run URL Redirection Tests
+        run: nnpx playwright test --project=chromium # Or --project=all to run on all configured browsers
+
+      - name: Upload Custom HTML Report
+        uses: actions/upload-artifact@v4
+        if: always() # Upload even if tests fail
+        with:
+          name: custom-redirect-report
+          path: reports/ # Path to your generated HTML reports folder
+          retention-days: 5 # How long to keep the artifact (optional)
+
+      - name: Upload Playwright HTML Report
+        uses: actions/upload-artifact@v4
+        if: always() # Upload even if tests fail
+        with:
+          name: playwright-html-report
+          path: playwright-report/ # Playwright's default report folder
+          retention-days: 5 # How long to keep the artifact (optional)
