@@ -1,0 +1,19 @@
+{
+  "name": "lubrizol",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "@types/node": "^24.0.14"
+  },
+  "dependencies": {
+    "fs-extra": "^11.3.0",
+    "pug": "^3.0.3",
+    "xlsx": "^0.18.5"
+  }
+}
