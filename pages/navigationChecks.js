@@ -14,11 +14,11 @@ function normalizeUrl(url) {
 
 /**
  * Checks URL redirection and verifies the absence of a "Page Not Found" H1 on the new page.
- * It collects failed records for easy reporting.
+ * It collects ALL records (passed, failed, skipped) for easy reporting.
  *
  * @param {import('@playwright/test').Page} page - The Playwright Page object.
  * @param {string} excelFilePath - The path to the Excel file containing the test data.
- * @returns {Promise<Array<Object>>} A promise that resolves to an array of failed records.
+ * @returns {Promise<Array<Object>>} A promise that resolves to an array of all test records (passed/failed/skipped).
  */
 export async function checkNavigation(page, excelFilePath) {
   const workbook = XLSX.readFile(excelFilePath);
@@ -27,22 +27,27 @@ export async function checkNavigation(page, excelFilePath) {
   const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
   const rows = data.slice(1);
-  const failedRecords = [];
+  const allTestResults = []; // New array to store all results
 
   for (const row of rows) {
     const oldUrl = row[0];
     const expectedNewUrlContains = row[1];
 
+    let currentRecord = { // Create a record for each row
+      oldUrl: oldUrl,
+      expectedNewUrlContains: expectedNewUrlContains,
+      status: 'Passed', // Assume passed until a failure is found
+      reason: '',
+      newUrl: 'N/A',
+      error: 'N/A'
+    };
+
     if (!oldUrl || !expectedNewUrlContains) {
       console.warn('Skipping row due to missing old URL or expected new URL part:', row);
-      failedRecords.push({
-        oldUrl: oldUrl || 'N/A',
-        expectedNewUrlContains: expectedNewUrlContains || 'N/A',
-        status: 'Skipped',
-        reason: 'Missing Old URL or Expected New URL part in Excel',
-        newUrl: 'N/A',
-        error: 'N/A'
-      });
+      currentRecord.status = 'Skipped';
+      currentRecord.reason = 'Missing Old URL or Expected New URL part in Excel';
+      currentRecord.error = currentRecord.reason;
+      allTestResults.push(currentRecord); // Add skipped record
       continue;
     }
 
@@ -52,6 +57,7 @@ export async function checkNavigation(page, excelFilePath) {
     try {
       await page.goto(oldUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
       newUrlReached = page.url();
+      currentRecord.newUrl = newUrlReached; // Update the new URL for the record
 
       // Normalize both URLs for comparison (remove trailing slash and convert to lowercase)
       const normalizedActualUrl = normalizeUrl(newUrlReached).toLowerCase();
@@ -73,26 +79,26 @@ export async function checkNavigation(page, excelFilePath) {
     }
 
     if (failureReason) {
-      console.error(`FAILED: ${oldUrl} -> ${newUrlReached}. Reason: ${failureReason}`);
-      failedRecords.push({
-        oldUrl: oldUrl,
-        expectedNewUrlContains: expectedNewUrlContains,
-        status: 'Failed',
-        reason: failureReason.trim(),
-        newUrl: newUrlReached,
-        error: failureReason
-      });
+      // console.error(`FAILED: ${oldUrl} -> ${newUrlReached}. Reason: ${failureReason}`); // Console log for failures
+      currentRecord.status = 'Failed';
+      currentRecord.reason = failureReason.trim();
+      currentRecord.error = failureReason;
     } else {
-      console.log(`SUCCESS: ${oldUrl} -> ${newUrlReached}`);
+      // console.log(`SUCCESS: ${oldUrl} -> ${newUrlReached}`); // Console log for passes
     }
-    console.log('---');
+    // console.log('---'); // Console log separator
+    allTestResults.push(currentRecord); // Add the completed record (pass/fail)
   }
 
-  return failedRecords;
+  return allTestResults; // Return all results
 }
 
-// ... (generateHtmlReport function remains the same) ...
-export async function generateHtmlReport(failedRecords, reportPath) {
+/**
+ * Generates an HTML report from all test records.
+ * @param {Array<Object>} allTestRecords - Array of all test records (passed/failed/skipped).
+ * @param {string} reportPath - Path where the HTML report should be saved.
+ */
+export async function generateHtmlReport(allTestRecords, reportPath) { // Updated parameter name
     const templatePath = './templates/report.pug';
 
     console.log(`[Report Debug] Attempting to generate report.`);
@@ -109,11 +115,19 @@ export async function generateHtmlReport(failedRecords, reportPath) {
         }
         console.log(`[Report Debug] Pug template found.`);
 
+        const passedRecords = allTestRecords.filter(r => r.status === 'Passed');
+        const failedRecords = allTestRecords.filter(r => r.status === 'Failed');
+        const skippedRecords = allTestRecords.filter(r => r.status === 'Skipped');
+
+
         const compiledFunction = pug.compileFile(templatePath);
         const html = compiledFunction({
-            failedRecords: failedRecords,
+            allTestRecords: allTestRecords, // Pass all records to the template
+            passedRecordsCount: passedRecords.length,
+            failedRecordsCount: failedRecords.length,
+            skippedRecordsCount: skippedRecords.length,
+            totalRecordsCount: allTestRecords.length,
             reportDate: new Date().toLocaleString(),
-            totalFailures: failedRecords.length
         });
         console.log(`[Report Debug] Pug template compiled and HTML generated.`);
 
